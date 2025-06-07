@@ -1,70 +1,122 @@
-# Getting Started with Create React App
+# Google Sheets Data Viewer PWA
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is a Progressive Web Application (PWA) designed to display data from a public Google Sheet in a user-friendly, responsive table. It's built with React and Material UI 3, focusing on performance and a good user experience on both desktop and mobile devices.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+*   **Google Sheets Integration:** Displays data directly from a specified public Google Sheet.
+*   **Responsive Design:** The interface adapts to different screen sizes, ensuring usability on desktops, tablets, and mobile phones.
+*   **Material UI 3:** Utilizes modern UI components from Material UI 3 for a clean and intuitive look and feel.
+*   **Progressive Web App (PWA):**
+    *   **Installable:** Can be "added to home screen" on supported mobile devices (iOS and Android) and desktops for an app-like experience.
+    *   **Offline Access:** Core application assets (HTML, CSS, JavaScript) are cached by a service worker, allowing the app shell to load even when offline. Data fetched previously might be available depending on browser caching, but live data requires an internet connection.
+*   **Low Latency Performance:** Optimized for quick loading and smooth interactions.
+*   **Loading & Error States:** Clearly indicates when data is being fetched or if an error occurs.
+*   **Cross-Browser Compatibility:** Works on modern web browsers.
 
-### `npm start`
+## How to Use
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Online (Desktop and Mobile)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1.  **Access the URL:** Open your web browser (like Chrome, Safari, Firefox, Edge) and navigate to the URL where the application is deployed.
+2.  **View Data:** The application will fetch and display the data from the configured Google Sheet.
 
-### `npm test`
+### Offline Usage
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+*   Once the application has been loaded at least once while online, the PWA's service worker will cache the main application files.
+*   This means you can open the app again even if you're offline, and the basic application shell will load.
+*   **Note:** To fetch the *latest* data from the Google Sheet, an active internet connection is required. If you are offline, you might see stale data if the browser has cached previous data requests, or an error if it tries to fetch fresh data. The core app (table structure, UI elements) will still be visible.
 
-### `npm run build`
+### Installing on Mobile (iOS and Android)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### Android (Using Chrome or other supporting browsers)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1.  **Open the URL:** Navigate to the web app's URL in your browser.
+2.  **Add to Home Screen:**
+    *   You should see a prompt or banner suggesting you can "Add to Home Screen".
+    *   Alternatively, tap the browser's menu button (usually three dots) and look for an option like "Install app" or "Add to Home screen".
+3.  **Launch from Home Screen:** Once installed, you can launch it like any other app from your phone's home screen or app drawer.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+#### iOS (Using Safari)
 
-### `npm run eject`
+1.  **Open the URL:** Navigate to the web app's URL in Safari.
+2.  **Add to Home Screen:**
+    *   Tap the "Share" button (it looks like a square with an arrow pointing upwards) in the Safari toolbar.
+    *   Scroll down in the Share menu and tap "Add to Home Screen".
+    *   Confirm the name for the app icon and tap "Add".
+3.  **Launch from Home Screen:** The app icon will appear on your home screen, and you can launch it like a native app.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Installing on Desktop (Chrome, Edge)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1.  **Open the URL:** Navigate to the web app's URL in a supported browser (like Chrome or Edge).
+2.  **Install App:**
+    *   Look for an "Install" icon in the address bar (often looks like a computer monitor with a down arrow or a plus sign).
+    *   Click it and follow the prompts to install the application.
+3.  **Launch from Apps:** The PWA will be added to your computer's list of applications (e.g., Chrome Apps folder, Start Menu).
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## For Developers
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Project Structure
 
-## Learn More
+*   `public/`: Contains static assets, including `index.html` and `manifest.json`.
+*   `src/`: Contains the React application code.
+    *   `components/`: Reusable UI components (e.g., `SheetDataTable.js`).
+    *   `services/`: Modules for external interactions (e.g., `sheetService.js` for Google Sheets API).
+    *   `App.js`: Main application component.
+    *   `index.js`: Entry point of the React application.
+    *   `serviceWorkerRegistration.js`: Handles PWA service worker registration.
+*   `google-sheets-webapp/src/__tests__`: Contains unit tests for `App.js`.
+*   `google-sheets-webapp/src/components/__tests__`: Contains unit tests for components.
+*   `google-sheets-webapp/src/services/__tests__`: Contains unit tests for services.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Prerequisites
 
-### Code Splitting
+*   Node.js (latest LTS version recommended)
+*   npm (comes with Node.js) or yarn
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Running Locally
 
-### Analyzing the Bundle Size
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd google-sheets-webapp
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    # yarn install
+    ```
+3.  **Start the development server:**
+    ```bash
+    npm start
+    # or
+    # yarn start
+    ```
+    This will open the application in your default web browser, usually at `http://localhost:3000`. The app will automatically reload if you make changes to the code.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Running Tests
 
-### Making a Progressive Web App
+To run the automated unit tests:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+npm test
+# or
+# yarn test
+```
 
-### Advanced Configuration
+This launches the test runner in interactive watch mode.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Building for Production
 
-### Deployment
+To create an optimized production build:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+npm run build
+# or
+# yarn build
+```
+This creates a `build` folder with the static assets for your application. These files are ready to be deployed to a static site hosting service. The build process also ensures the service worker is correctly generated by Workbox.
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+EOF
