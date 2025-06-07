@@ -1,0 +1,24 @@
+{
+  "short_name": "Sheets PWA",
+  "name": "Google Sheets Data Viewer PWA",
+  "icons": [
+    {
+      "src": "img/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#6750A4",
+  "background_color": "#FFFBFE",
+  "scope": "/",
+  "description": "A PWA to display Google Sheets data."
+}
