@@ -28,6 +28,23 @@ const getDisplayValue = (value) => {
   return String(value);
 };
 
+const findYearInHeaderData = (headerData) => {
+  if (!headerData) return null;
+  // Iterate through the values of the headerData object
+  for (const key in headerData) {
+    if (Object.prototype.hasOwnProperty.call(headerData, key)) {
+      const value = headerData[key];
+      if (value && typeof value === 'string' && /^\d{4}$/.test(value.trim())) {
+        return value.trim(); // Found a 4-digit string
+      }
+      if (value && typeof value === 'number' && value >= 1000 && value <= 9999) {
+        return String(value); // Found a 4-digit number
+      }
+    }
+  }
+  return null; // No 4-digit year found
+};
+
 const SectionHeaderSummary = ({ headerData, allHeaders }) => {
   if (headerData.syntheticHeader) {
     return (
@@ -37,50 +54,61 @@ const SectionHeaderSummary = ({ headerData, allHeaders }) => {
     );
   }
 
-  // For regular sections, use 'year' as the main title.
-  // Find the actual header name for 'year' (case-insensitive)
-  const yearHeaderKey = allHeaders.find(h => h && h.trim().toLowerCase() === 'year');
-  const yearValue = yearHeaderKey ? headerData[yearHeaderKey] : 'Year N/A';
+  const detectedYear = findYearInHeaderData(headerData);
+  const yearDisplayValue = detectedYear ? getDisplayValue(detectedYear) : 'Year N/A';
 
   // Prepare other details for secondary display
   const details = {};
-  const dateHeaderKey = allHeaders.find(h => h && h.toLowerCase().includes('dato'));
-  const categoryHeaderKey = allHeaders.find(h => h && h.toLowerCase().includes('kategori'));
-  // const notesHeaderKey = allHeaders.find(h => h && h.toLowerCase().includes('noter')); // Notes might be too long for summary
+  // Find header keys case-insensitively, then use them to get values
+  const dateHeaderKey = allHeaders.find(h => h && h.trim().toLowerCase().includes('dato'));
+  const categoryHeaderKey = allHeaders.find(h => h && h.trim().toLowerCase().includes('kategori'));
+  const weekendHeaderKey = allHeaders.find(h => h && h.trim().toLowerCase() === 'weekend #');
 
   if (dateHeaderKey && headerData[dateHeaderKey]) {
-    details[`${dateHeaderKey}`] = getDisplayValue(headerData[dateHeaderKey]);
+    details[dateHeaderKey] = getDisplayValue(headerData[dateHeaderKey]);
   }
   if (categoryHeaderKey && headerData[categoryHeaderKey]) {
-     details[`${categoryHeaderKey}`] = getDisplayValue(headerData[categoryHeaderKey]);
+     details[categoryHeaderKey] = getDisplayValue(headerData[categoryHeaderKey]);
   }
-  // Add Weekend # if available
-  const weekendHeaderKey = allHeaders.find(h => h && h.trim().toLowerCase() === 'weekend #');
   if (weekendHeaderKey && headerData[weekendHeaderKey]) {
-    details[`${weekendHeaderKey}`] = getDisplayValue(headerData[weekendHeaderKey]);
+    details[weekendHeaderKey] = getDisplayValue(headerData[weekendHeaderKey]);
+  }
+
+  // Fallback title if no year is detected
+  let primaryTitle;
+  if (detectedYear) {
+    primaryTitle = `Year: ${yearDisplayValue}`;
+  } else {
+    // Create a fallback title from the first few non-empty header data values if no year
+    const fallbackTitleParts = [];
+    for (const key of allHeaders.slice(0,3)) { // Check first 3 headers passed in allHeaders
+        if (headerData[key] && String(headerData[key]).trim() !== '' && String(headerData[key]).toLowerCase() !== 'figur idé') {
+            fallbackTitleParts.push(String(headerData[key]).trim());
+        }
+        if (fallbackTitleParts.length >= 2) break; // Max 2 parts for fallback title
+    }
+    primaryTitle = fallbackTitleParts.length > 0 ? fallbackTitleParts.join(' - ') : 'Section Details';
   }
 
 
   return (
     <Box sx={{ width: '100%' }}>
       <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: defaultTheme.palette.primary.main, mb: 0.5 }}>
-        Year: {getDisplayValue(yearValue)}
+        {primaryTitle}
       </Typography>
-      <Grid container spacing={1}>
-        {Object.entries(details).map(([key, value]) => (
-          <Grid item xs={12} sm={6} md={4} key={key}>
-            <Typography variant="body2" component="span" sx={{ fontWeight: 'medium', color: defaultTheme.palette.text.secondary }}>
-              {key}:{' '}
-            </Typography>
-            <Typography variant="body2" component="span" sx={{ color: defaultTheme.palette.text.primary, wordBreak: 'break-word' }}>
-              {value}
-            </Typography>
-          </Grid>
-        ))}
-      </Grid>
-      {Object.keys(details).length === 0 && !yearValue && ( // Fallback if no details found
-        <Grid item xs={12}>
-            <Typography variant="subtitle1" component="div">Section Header</Typography>
+      {/* Display other details only if a year was found, to avoid clutter if it's a generic title */}
+      {detectedYear && Object.keys(details).length > 0 && (
+        <Grid container spacing={1}>
+          {Object.entries(details).map(([key, value]) => (
+            <Grid item xs={12} sm={6} md={4} key={key}>
+              <Typography variant="body2" component="span" sx={{ fontWeight: 'medium', color: defaultTheme.palette.text.secondary }}>
+                {key}:{' '}
+              </Typography>
+              <Typography variant="body2" component="span" sx={{ color: defaultTheme.palette.text.primary, wordBreak: 'break-word' }}>
+                {value}
+              </Typography>
+            </Grid>
+          ))}
         </Grid>
       )}
     </Box>
@@ -89,19 +117,13 @@ const SectionHeaderSummary = ({ headerData, allHeaders }) => {
 
 
 const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
-  // Default expanded state: expand 'section-initial' or the first section if 'section-initial' doesn't exist and there's only one section.
-  // Otherwise, start with all collapsed unless a specific section ID is provided to be expanded.
   let initialExpanded = false;
   if (sections && sections.length > 0) {
     if (sections[0].id === 'section-initial') {
       initialExpanded = sections[0].id;
     }
-    // else if (sections.length === 1) { // Optionally expand if only one non-overview section
-    //   initialExpanded = sections[0].id;
-    // }
   }
   const [expanded, setExpanded] = useState(initialExpanded);
-
 
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : false);
@@ -125,21 +147,17 @@ const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
     const firstSectionWithContent = sections.find(s => s.contentRows && s.contentRows.length > 0);
     if (firstSectionWithContent) {
         contentTableHeaders = originalHeaders.filter(header => {
-            const lowerHeader = header.toLowerCase();
-            // Prioritize Figur Idé, Kategori, Noter for content rows
+            const lowerHeader = header ? String(header).toLowerCase() : ""; // Ensure header is string before toLowerCase
             if (lowerHeader.includes('figur idé') || lowerHeader.includes('kategori') || lowerHeader.includes('noter/inspiration')) return true;
-            // Include other columns if they have data in content rows
             return firstSectionWithContent.contentRows.slice(0, 5).some(row => row[header] !== null && String(row[header]).trim() !== '');
         });
-        // Fallback if filtering is too aggressive or no priority headers found
         if (contentTableHeaders.length === 0 && originalHeaders.length > 0) contentTableHeaders = originalHeaders.slice(0, Math.min(6, originalHeaders.length));
-        else if (contentTableHeaders.length === 0 && originalHeaders.length === 0) contentTableHeaders = ["Details"]; // Absolute fallback
+        else if (contentTableHeaders.length === 0 && originalHeaders.length === 0) contentTableHeaders = ["Details"];
     }
   }
 
-
   return (
-    <ThemeProvider theme={defaultTheme}> {/* App.js also has a ThemeProvider, this could be removed if theme is passed or inherited */}
+    <ThemeProvider theme={defaultTheme}>
       {sections.map((section, sectionIndex) => (
         <Accordion
           key={section.id}
@@ -147,9 +165,9 @@ const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
           onChange={handleChange(section.id)}
           defaultExpanded={section.id === 'section-initial'}
           TransitionProps={{ timeout: 400 }}
-          sx={{ mb: 1, '&:before': { display: 'none' } }} // '&:before' removes the top border line for a cleaner look when stacked
-          disableGutters // Removes left/right padding from Accordion, details will handle padding
-          elevation={1} // Subtle shadow
+          sx={{ mb: 1, '&:before': { display: 'none' } }}
+          disableGutters
+          elevation={1}
         >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -165,7 +183,7 @@ const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
           >
             <SectionHeaderSummary headerData={section.headerData} allHeaders={originalHeaders} />
           </AccordionSummary>
-          <AccordionDetails sx={{ backgroundColor: defaultTheme.palette.background.paper, p: 2 }}> {/* Consistent padding */}
+          <AccordionDetails sx={{ backgroundColor: defaultTheme.palette.background.paper, p: 2 }}>
             {section.contentRows && section.contentRows.length > 0 ? (
               <TableContainer component={Paper} elevation={0} variant="outlined">
                 <Table size="small" aria-label={`details for section ${section.headerData.title || `section ${sectionIndex + 1}`}`}>
