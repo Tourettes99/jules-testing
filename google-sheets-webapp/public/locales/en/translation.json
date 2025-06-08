@@ -1,0 +1,18 @@
+{
+  "appTitle": "myclaysuggestions.com",
+  "overviewSectionTitle": "Overview",
+  "yearLabel": "Year",
+  "categoryLabel": "Category",
+  "dateLabel": "Date",
+  "weekendLabel": "Weekend #",
+  "notesLabel": "Notes/Inspiration",
+  "figurIdeLabel": "Figur Idé",
+  "noContentInSection": "No content items in this section.",
+  "errorDisplayingData": "Error Displaying Data",
+  "errorDetailsPrefix": "Details",
+  "noDataAvailable": "No data available or no sections processed.",
+  "loadingData": "Loading...",
+  "toggleLanguageToDanish": "Switch to Danish",
+  "toggleLanguageToEnglish": "Switch to English",
+  "sectionDetailsFallbackTitle": "Section Details"
+}

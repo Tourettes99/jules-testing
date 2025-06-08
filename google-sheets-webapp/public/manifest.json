@@ -1,6 +1,6 @@
 {
-  "short_name": "Sheets PWA",
-  "name": "Google Sheets Data Viewer PWA",
+  "short_name": "ClaySuggest",
+  "name": "myclaysuggestions.com",
   "icons": [
     {
       "src": "img/logo192.png",
@@ -20,5 +20,5 @@
   "theme_color": "#6750A4",
   "background_color": "#FFFBFE",
   "scope": "/",
-  "description": "A PWA to display Google Sheets data."
+  "description": "A PWA to display Google Sheets data for myclaysuggestions.com."
 }
