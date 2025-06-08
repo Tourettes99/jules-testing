@@ -19,27 +19,24 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-// A simple default theme for now, can be expanded later if needed from App's theme
 const defaultTheme = createTheme();
 
-// Helper to get a displayable value
 const getDisplayValue = (value) => {
   if (value === null || value === undefined || String(value).trim() === '') {
-    return '-'; // Or an empty string, depending on preference
+    return '-';
   }
   return String(value);
 };
 
-// Component to render the details of a header row in a more structured way
 const SectionHeaderSummary = ({ headerData, allHeaders }) => {
-  // Define which headers from the headerData row are important for the summary
-  // These are typically the main identifying fields of the section.
-  const summaryHeaders = allHeaders.slice(0, 3); // Example: First 3 columns like 'year', 'Weekend #', 'Dato'
-  const detailHeaders = allHeaders.slice(3, 6); // Example: Next 3 like 'Figur Idé', 'Kategori', 'Noter'
-                                                // 'Figur Idé' in headerData is "Figur Idé", so maybe skip or show differently.
-                                                // 'Kategori' and 'Noter/Inspiration' might be good for summary.
+  if (headerData.syntheticHeader) {
+    return (
+      <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', width: '100%' }}>
+        {headerData.title || 'Overview'}
+      </Typography>
+    );
+  }
 
-  // Let's pick specific headers by their names for a better summary
   const displaySummary = {};
   const dateHeader = allHeaders.find(h => h && h.toLowerCase().includes('dato'));
   const categoryHeader = allHeaders.find(h => h && h.toLowerCase().includes('kategori'));
@@ -49,15 +46,13 @@ const SectionHeaderSummary = ({ headerData, allHeaders }) => {
   if (categoryHeader && headerData[categoryHeader]) displaySummary[categoryHeader] = headerData[categoryHeader];
   if (notesHeader && headerData[notesHeader]) displaySummary[notesHeader] = headerData[notesHeader];
 
-  // Fallback if specific headers aren't found, use first few, excluding 'Figur Idé' itself
    if (Object.keys(displaySummary).length === 0) {
     allHeaders.slice(0,5).forEach(h => {
-        if (h && headerData[h] && headerData[h].toLowerCase() !== 'figur idé') {
+        if (h && headerData[h] && String(headerData[h]).toLowerCase() !== 'figur idé') { // Check type before toLowerCase
             displaySummary[h] = headerData[h];
         }
     });
   }
-
 
   return (
     <Grid container spacing={2} sx={{ width: '100%' }}>
@@ -71,74 +66,61 @@ const SectionHeaderSummary = ({ headerData, allHeaders }) => {
           </Typography>
         </Grid>
       ))}
+      {Object.keys(displaySummary).length === 0 && (
+        <Grid item xs={12}>
+            <Typography variant="subtitle1" component="div">Section Header</Typography>
+        </Grid>
+      )}
     </Grid>
   );
 };
 
 
 const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
-  const [expanded, setExpanded] = useState(false); // Can be section.id to control individually
+  const [expanded, setExpanded] = useState(sections && sections.length > 0 && sections[0].id === 'section-initial' ? sections[0].id : false);
 
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : false);
   };
 
   if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-      </Box>
-    );
+    return (<Box display="flex" justifyContent="center" alignItems="center" minHeight="200px"><CircularProgress /></Box>);
   }
-
   if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+    return (<Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="200px">
         <Typography color="error" variant="h6">Error Displaying Data</Typography>
         <Typography color="error">Details: {error.message}</Typography>
-      </Box>
-    );
+      </Box>);
   }
-
   if (!sections || sections.length === 0) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <Typography>No data available or no sections processed.</Typography>
-      </Box>
-    );
+    return (<Box display="flex" justifyContent="center" alignItems="center" minHeight="200px"><Typography>No data available or no sections processed.</Typography></Box>);
   }
 
-  // Determine relevant headers for content rows.
-  // These are headers that typically have data in content rows.
-  // Exclude headers that are only relevant for section headers (like 'year', 'Weekend #', 'Dato') if they are always empty in content.
-  // For now, let's use a heuristic: show headers that have at least one non-empty value in the content rows of the first section.
-  // A more robust way might be to pre-calculate this in App.js or define fixed content headers.
   let contentTableHeaders = originalHeaders;
-  if (sections.length > 0 && sections[0].contentRows.length > 0) {
-    const firstSectionContent = sections[0].contentRows;
-    contentTableHeaders = originalHeaders.filter(header => {
-        // Keep 'Figur Idé', 'Kategori', 'Noter/Inspiration' by default if they exist
-        const lowerHeader = header.toLowerCase();
-        if (lowerHeader.includes('figur') || lowerHeader.includes('kategori') || lowerHeader.includes('noter')) {
-            return true;
-        }
-        // For other headers, check if they have any data in the first few content rows
-        return firstSectionContent.slice(0, 5).some(row => row[header] !== null && String(row[header]).trim() !== '');
-    });
-    // Ensure we always have some headers if filtering is too aggressive
-    if (contentTableHeaders.length === 0) contentTableHeaders = originalHeaders.slice(0,6); // Fallback
+  if (sections.length > 0 && sections.some(s => s.contentRows && s.contentRows.length > 0)) {
+    const firstSectionWithContent = sections.find(s => s.contentRows && s.contentRows.length > 0);
+    if (firstSectionWithContent) {
+        contentTableHeaders = originalHeaders.filter(header => {
+            const lowerHeader = header.toLowerCase();
+            if (lowerHeader.includes('figur') || lowerHeader.includes('kategori') || lowerHeader.includes('noter')) return true;
+            return firstSectionWithContent.contentRows.slice(0, 5).some(row => row[header] !== null && String(row[header]).trim() !== '');
+        });
+        if (contentTableHeaders.length === 0 && originalHeaders.length > 0) contentTableHeaders = originalHeaders.slice(0, Math.min(6, originalHeaders.length));
+        else if (contentTableHeaders.length === 0 && originalHeaders.length === 0) contentTableHeaders = ["Column"]; // Absolute fallback
+    }
   }
 
 
   return (
-    <ThemeProvider theme={defaultTheme}> {/* Or use theme passed from App.js */}
+    <ThemeProvider theme={defaultTheme}>
       {sections.map((section, sectionIndex) => (
         <Accordion
           key={section.id}
           expanded={expanded === section.id}
           onChange={handleChange(section.id)}
-          TransitionProps={{ timeout: 400 }} // Smooth fade/collapse
-          sx={{ mb: 1 }} // Margin bottom for spacing between accordions
+          defaultExpanded={section.id === 'section-initial'} // Default expand initial section
+          TransitionProps={{ timeout: 400 }}
+          sx={{ mb: 1 }}
         >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -151,7 +133,7 @@ const AccordionView = ({ sections, isLoading, error, originalHeaders }) => {
           <AccordionDetails sx={{ backgroundColor: defaultTheme.palette.background.paper, pt: 0, pb: 2, pl:2, pr:2 }}>
             {section.contentRows && section.contentRows.length > 0 ? (
               <TableContainer component={Paper} elevation={0} variant="outlined">
-                <Table size="small" aria-label={`details for section ${sectionIndex + 1}`}>
+                <Table size="small" aria-label={`details for section ${section.headerData.title || `section ${sectionIndex + 1}`}`}>
                   <TableHead sx={{ backgroundColor: defaultTheme.palette.grey[100] }}>
                     <TableRow>
                       {contentTableHeaders.map((header) => (
