@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 // Extracted SHEET_ID: 1Js7j6E1PJ-YSrUmiNKxiAhGGjVACAaUf
 // Extracted GID (from 'sd=true' which implies the first sheet, gid=0): 0
 const SHEET_ID = '1Js7j6E1PJ-YSrUmiNKxiAhGGjVACAaUf';
-const GID = '0'; // Assuming the first sheet as 'sd=true' usually points to the default sheet (gid=0)
+const GID = '517478424'; // Assuming the first sheet as 'sd=true' usually points to the default sheet (gid=0)
 
 const CSV_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
 
