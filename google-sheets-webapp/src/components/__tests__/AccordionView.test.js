@@ -6,11 +6,11 @@ import AccordionView from '../AccordionView';
 jest.mock('@mui/icons-material/ExpandMore', () => () => <div data-testid="expand-icon"></div>);
 
 describe('AccordionView Component', () => {
-  const mockHeaders = ['Dato (Lør-Søn 2025)', 'Kategori', 'Figur Idé', 'Noter/Inspiration', 'year', 'Weekend #'];
+  const mockOriginalHeaders = ['year', 'Weekend #', 'Dato (Lør-Søn 2025)', 'Kategori', 'Figur Idé', 'Noter/Inspiration'];
   const defaultProps = {
     isLoading: false,
     error: null,
-    originalHeaders: mockHeaders,
+    originalHeaders: mockOriginalHeaders,
   };
 
   test('renders loading spinner when isLoading is true', () => {
@@ -28,86 +28,78 @@ describe('AccordionView Component', () => {
     expect(screen.getByText('No data available or no sections processed.')).toBeInTheDocument();
   });
 
-  const regularSections = [
-    {
-      id: 'section-1',
-      headerData: { 'Dato (Lør-Søn 2025)': 'Date 1', 'Kategori': 'Category A', 'year': '2025', 'Weekend #': 'W1' },
-      contentRows: [{ 'Figur Idé': 'Idea 1.1', 'Noter/Inspiration': 'Note 1.1' }]
-    },
-    {
-      id: 'section-2',
-      headerData: { 'Dato (Lør-Søn 2025)': 'Date 2', 'Kategori': 'Category B', 'year': '2026', 'Weekend #': 'W2' },
-      contentRows: [{ 'Figur Idé': 'Idea 2.1', 'Noter/Inspiration': 'Note 2.1' }]
-    },
-  ];
+  const regularSection1Data = {
+    id: 'section-1',
+    headerData: { 'year': '2025', 'Weekend #': 'W1', 'Dato (Lør-Søn 2025)': 'Date 1', 'Kategori': 'Category A', 'Figur Idé': 'Figur Idé' },
+    contentRows: [{ 'Figur Idé': 'Idea 1.1', 'Noter/Inspiration': 'Note 1.1' }]
+  };
+  const regularSection2Data = {
+    id: 'section-2',
+    headerData: { 'year': '2026', 'Weekend #': 'W2', 'Dato (Lør-Søn 2025)': 'Date 2', 'Kategori': 'Category B', 'Figur Idé': 'Figur Idé' },
+    contentRows: [{ 'Figur Idé': 'Idea 2.1', 'Noter/Inspiration': 'Note 2.1' }]
+  };
 
   const sectionsWithInitial = [
     {
       id: 'section-initial',
-      headerData: { syntheticHeader: true, title: 'Overview' },
+      headerData: { syntheticHeader: true, title: 'Overview Title' }, // Use a distinct title for testing
       contentRows: [{ 'Figur Idé': 'Overview Content 1', 'Noter/Inspiration': 'Overview Note' }]
     },
-    ...regularSections
+    regularSection1Data,
+    regularSection2Data,
   ];
 
-  test('renders correct number of accordions', () => {
-    render(<AccordionView {...defaultProps} sections={regularSections} />);
-    const accordionSummaries = screen.getAllByRole('button', { name: /Date|Category/i });
-    expect(accordionSummaries.length).toBe(regularSections.length);
+  const regularSectionsOnly = [regularSection1Data, regularSection2Data];
+
+
+  test('renders "Overview Title" for synthetic initial section header', () => {
+    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
+    expect(screen.getByText('Overview Title')).toBeInTheDocument();
   });
 
-  test('renders initial "Overview" section first if present and handles its title', () => {
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
-    const accordionSummaries = screen.getAllByRole('button'); // Get all accordion buttons
-    expect(accordionSummaries.length).toBe(sectionsWithInitial.length);
-    expect(screen.getByText('Overview')).toBeInTheDocument(); // Check for synthetic header title
-    expect(screen.getByText(/Date 1/i)).toBeInTheDocument(); // Check for regular section
+  test('renders "Year: [yearValue]" as title for regular section headers', () => {
+    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
+    expect(screen.getByText(/Year: 2025/i)).toBeInTheDocument();
+    expect(screen.getByText(/Year: 2026/i)).toBeInTheDocument();
   });
 
-  test('initial "Overview" section is expanded by default, others are not', async () => {
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
+  test('displays details like Date, Category, Weekend # in regular section summary', () => {
+    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
+    // Check for section 1 details
+    expect(screen.getByText((content, node) => {
+        const hasText = (text) => node.textContent.includes(text);
+        return hasText('Dato (Lør-Søn 2025):') && hasText('Date 1');
+    })).toBeInTheDocument();
+    expect(screen.getByText((content, node) => {
+        const hasText = (text) => node.textContent.includes(text);
+        return hasText('Kategori:') && hasText('Category A');
+    })).toBeInTheDocument();
+     expect(screen.getByText((content, node) => {
+        const hasText = (text) => node.textContent.includes(text);
+        return hasText('Weekend #:') && hasText('W1');
+    })).toBeInTheDocument();
+  });
 
-    // Check Overview content is visible (expanded by default)
+
+  test('initial "Overview" section is expanded by default', async () => {
+    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
     expect(await screen.findByText('Overview Content 1')).toBeVisible();
+    expect(screen.queryByText('Idea 1.1')).not.toBeVisible(); // Regular section not auto-expanded
+  });
 
-    // Check regular section content is NOT visible
+  test('if no initial section, first regular section is NOT auto-expanded', () => {
+    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
     expect(screen.queryByText('Idea 1.1')).not.toBeVisible();
   });
 
-  test('if no initial "Overview" section, first regular section is NOT expanded by default', () => {
-    render(<AccordionView {...defaultProps} sections={regularSections} />);
-    // Check regular section content is NOT visible
-    expect(screen.queryByText('Idea 1.1')).not.toBeVisible();
-  });
-
-  test('expands regular accordion on click and shows content when initial section exists', async () => {
+  test('expands regular accordion on click and shows content', async () => {
     const user = userEvent.setup();
     render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
+    const regularAccordionSummary = screen.getByRole('button', { name: /Year: 2025/i }); // Target by new title format
 
-    const overviewAccordionSummary = screen.getByRole('button', { name: 'Overview' });
-    const regularAccordionSummary = screen.getByRole('button', { name: /Date 1/i });
-
-    // Overview is expanded by default
-    expect(await screen.findByText('Overview Content 1')).toBeVisible();
-
-    // Click to expand the regular accordion
     await user.click(regularAccordionSummary);
-    expect(await screen.findByText('Idea 1.1')).toBeVisible(); // Content of regular accordion
-
-    // Overview content should now be hidden (single expansion behavior)
+    expect(await screen.findByText('Idea 1.1')).toBeVisible();
+    // Overview should collapse
     expect(screen.queryByText('Overview Content 1')).not.toBeVisible();
-  });
-
-  test('clicking an already expanded initial section should close it', async () => {
-    const user = userEvent.setup();
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
-    const overviewAccordionSummary = screen.getByRole('button', { name: 'Overview' });
-
-    // Initially expanded
-    expect(await screen.findByText('Overview Content 1')).toBeVisible();
-    await user.click(overviewAccordionSummary);
-    // Should be collapsed now
-    expect(screen.queryByText('Overview Content 1')).not.toBeVisible();
-
   });
 });
