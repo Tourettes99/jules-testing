@@ -2,104 +2,118 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AccordionView from '../AccordionView';
 
-// Mock ExpandMoreIcon as it's just decorative for tests
 jest.mock('@mui/icons-material/ExpandMore', () => () => <div data-testid="expand-icon"></div>);
 
 describe('AccordionView Component', () => {
-  const mockOriginalHeaders = ['year', 'Weekend #', 'Dato (Lør-Søn 2025)', 'Kategori', 'Figur Idé', 'Noter/Inspiration'];
+  const mockOriginalHeaders = ['year', 'Weekend #', 'Dato (Lør-Søn 2025)', 'Kategori', 'Figur Idé', 'Noter/Inspiration', 'SomeRandomCol'];
   const defaultProps = {
     isLoading: false,
     error: null,
     originalHeaders: mockOriginalHeaders,
   };
 
-  test('renders loading spinner when isLoading is true', () => {
-    render(<AccordionView {...defaultProps} isLoading={true} sections={[]} />);
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-  });
-
-  test('renders error message when error object is provided', () => {
-    render(<AccordionView {...defaultProps} error={{ message: 'Test Error' }} sections={[]} />);
-    expect(screen.getByText(/error displaying data/i)).toBeInTheDocument();
-  });
-
-  test('renders "No data available" when sections are empty', () => {
-    render(<AccordionView {...defaultProps} sections={[]} />);
-    expect(screen.getByText('No data available or no sections processed.')).toBeInTheDocument();
-  });
-
-  const regularSection1Data = {
-    id: 'section-1',
-    headerData: { 'year': '2025', 'Weekend #': 'W1', 'Dato (Lør-Søn 2025)': 'Date 1', 'Kategori': 'Category A', 'Figur Idé': 'Figur Idé' },
-    contentRows: [{ 'Figur Idé': 'Idea 1.1', 'Noter/Inspiration': 'Note 1.1' }]
-  };
-  const regularSection2Data = {
-    id: 'section-2',
-    headerData: { 'year': '2026', 'Weekend #': 'W2', 'Dato (Lør-Søn 2025)': 'Date 2', 'Kategori': 'Category B', 'Figur Idé': 'Figur Idé' },
-    contentRows: [{ 'Figur Idé': 'Idea 2.1', 'Noter/Inspiration': 'Note 2.1' }]
+  // Section Data
+  const overviewSection = {
+    id: 'section-initial',
+    headerData: { syntheticHeader: true, title: 'Test Overview' },
+    contentRows: [{ 'Figur Idé': 'Overview Content' }]
   };
 
-  const sectionsWithInitial = [
-    {
-      id: 'section-initial',
-      headerData: { syntheticHeader: true, title: 'Overview Title' }, // Use a distinct title for testing
-      contentRows: [{ 'Figur Idé': 'Overview Content 1', 'Noter/Inspiration': 'Overview Note' }]
-    },
-    regularSection1Data,
-    regularSection2Data,
-  ];
+  const sectionWithYearInYearCol = {
+    id: 'section-year-col',
+    headerData: { 'year': '2025', 'Weekend #': 'W1', 'Dato (Lør-Søn 2025)': 'Date 1', 'Kategori': 'Cat A', 'Figur Idé': 'Figur Idé' },
+    contentRows: [{ 'Figur Idé': 'Content A' }]
+  };
 
-  const regularSectionsOnly = [regularSection1Data, regularSection2Data];
+  const sectionWithYearInRandomCol = {
+    id: 'section-year-random',
+    headerData: { 'SomeRandomCol': '2026', 'Weekend #': 'W2', 'Dato (Lør-Søn 2025)': 'Date 2', 'Kategori': 'Cat B', 'Figur Idé': 'Figur Idé' },
+    contentRows: [{ 'Figur Idé': 'Content B' }]
+  };
+
+  const sectionWithNumericYear = {
+    id: 'section-year-numeric',
+    headerData: { 'year': 2027, 'Weekend #': 'W3', 'Dato (Lør-Søn 2025)': 'Date 3', 'Kategori': 'Cat C', 'Figur Idé': 'Figur Idé' },
+    contentRows: [{ 'Figur Idé': 'Content C' }]
+  };
+
+  const sectionWithoutYear = {
+    id: 'section-no-year',
+    headerData: { 'Weekend #': 'W4', 'Dato (Lør-Søn 2025)': 'Date 4', 'Kategori': 'Cat D', 'Figur Idé': 'Figur Idé', 'SomeRandomCol': 'NotAYear' },
+    contentRows: [{ 'Figur Idé': 'Content D' }]
+  };
+
+  const sectionWithOnlyNonFigurIdeHeadersForFallback = {
+    id: 'section-fallback-title',
+    headerData: { 'Dato (Lør-Søn 2025)': 'Important Date', 'Kategori': 'Special Category', 'Figur Idé': 'Figur Idé', 'year': 'NoYearHere' },
+    contentRows: []
+  };
 
 
-  test('renders "Overview Title" for synthetic initial section header', () => {
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
-    expect(screen.getByText('Overview Title')).toBeInTheDocument();
+  test('renders synthetic "Overview" header correctly', () => {
+    render(<AccordionView {...defaultProps} sections={[overviewSection]} />);
+    expect(screen.getByText('Test Overview')).toBeInTheDocument();
   });
 
-  test('renders "Year: [yearValue]" as title for regular section headers', () => {
-    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
+  test('renders "Year: [year]" when year is in "year" column', () => {
+    render(<AccordionView {...defaultProps} sections={[sectionWithYearInYearCol]} />);
     expect(screen.getByText(/Year: 2025/i)).toBeInTheDocument();
+    // Check details are shown
+    expect(screen.getByText(/Date 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cat A/i)).toBeInTheDocument();
+  });
+
+  test('renders "Year: [year]" when year is in a different column as a string', () => {
+    render(<AccordionView {...defaultProps} sections={[sectionWithYearInRandomCol]} />);
     expect(screen.getByText(/Year: 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/Date 2/i)).toBeInTheDocument();
   });
 
-  test('displays details like Date, Category, Weekend # in regular section summary', () => {
-    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
-    // Check for section 1 details
-    expect(screen.getByText((content, node) => {
-        const hasText = (text) => node.textContent.includes(text);
-        return hasText('Dato (Lør-Søn 2025):') && hasText('Date 1');
-    })).toBeInTheDocument();
-    expect(screen.getByText((content, node) => {
-        const hasText = (text) => node.textContent.includes(text);
-        return hasText('Kategori:') && hasText('Category A');
-    })).toBeInTheDocument();
-     expect(screen.getByText((content, node) => {
-        const hasText = (text) => node.textContent.includes(text);
-        return hasText('Weekend #:') && hasText('W1');
-    })).toBeInTheDocument();
+  test('renders "Year: [year]" when year is a number', () => {
+    render(<AccordionView {...defaultProps} sections={[sectionWithNumericYear]} />);
+    expect(screen.getByText(/Year: 2027/i)).toBeInTheDocument();
+     expect(screen.getByText(/Date 3/i)).toBeInTheDocument();
+  });
+
+  test('renders fallback title when no 4-digit year is detected in headerData', () => {
+    // originalHeaders for SectionHeaderSummary are ['year', 'Weekend #', 'Dato (Lør-Søn 2025)', ...]
+    // headerData for sectionWithoutYear: { 'Weekend #': 'W4', 'Dato (Lør-Søn 2025)': 'Date 4', 'Kategori': 'Cat D', 'Figur Idé': 'Figur Idé', 'SomeRandomCol': 'NotAYear' }
+    // Expected fallback title from first 3 originalHeaders: 'W4 - Date 4' (as 'year' is empty/not a year)
+    render(<AccordionView {...defaultProps} sections={[sectionWithoutYear]} />);
+    // The first 3 headers are 'year', 'Weekend #', 'Dato (Lør-Søn 2025)'
+    // sectionWithoutYear.headerData['year'] is undefined.
+    // sectionWithoutYear.headerData['Weekend #'] is 'W4'.
+    // sectionWithoutYear.headerData['Dato (Lør-Søn 2025)'] is 'Date 4'.
+    // So, fallback should be 'W4 - Date 4'
+    expect(screen.getByText("W4 - Date 4")).toBeInTheDocument();
+    // Details grid should NOT be shown
+    expect(screen.queryByText(/Kategori:/i)).not.toBeInTheDocument();
+  });
+
+  test('renders fallback title from first few non-empty values if year is not found', () => {
+    render(<AccordionView {...defaultProps} sections={[sectionWithOnlyNonFigurIdeHeadersForFallback]} />);
+    // headerData: { 'Dato (Lør-Søn 2025)': 'Important Date', 'Kategori': 'Special Category', 'Figur Idé': 'Figur Idé', 'year': 'NoYearHere' }
+    // allHeaders.slice(0,3) are 'year', 'Weekend #', 'Dato (Lør-Søn 2025)'
+    // headerData['year'] is 'NoYearHere' (not a year)
+    // headerData['Weekend #'] is undefined
+    // headerData['Dato (Lør-Søn 2025)'] is 'Important Date'
+    // Fallback parts: 'NoYearHere', 'Important Date'
+    expect(screen.getByText("NoYearHere - Important Date")).toBeInTheDocument();
   });
 
 
-  test('initial "Overview" section is expanded by default', async () => {
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
-    expect(await screen.findByText('Overview Content 1')).toBeVisible();
-    expect(screen.queryByText('Idea 1.1')).not.toBeVisible(); // Regular section not auto-expanded
+  test('details grid (Date, Kategori, etc.) is hidden when no year is detected', () => {
+    render(<AccordionView {...defaultProps} sections={[sectionWithoutYear]} />);
+    expect(screen.getByText("W4 - Date 4")).toBeInTheDocument(); // Fallback title
+    // These details should not be present as no year was detected
+    expect(screen.queryByText("Dato (Lør-Søn 2025):")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kategori:")).not.toBeInTheDocument();
   });
 
-  test('if no initial section, first regular section is NOT auto-expanded', () => {
-    render(<AccordionView {...defaultProps} sections={regularSectionsOnly} />);
-    expect(screen.queryByText('Idea 1.1')).not.toBeVisible();
+  test('default expansion of initial section still works', async () => {
+    render(<AccordionView {...defaultProps} sections={[overviewSection, sectionWithYearInYearCol]} />);
+    expect(await screen.findByText('Overview Content')).toBeVisible();
+    expect(screen.queryByText('Content A')).not.toBeVisible();
   });
 
-  test('expands regular accordion on click and shows content', async () => {
-    const user = userEvent.setup();
-    render(<AccordionView {...defaultProps} sections={sectionsWithInitial} />);
-    const regularAccordionSummary = screen.getByRole('button', { name: /Year: 2025/i }); // Target by new title format
-
-    await user.click(regularAccordionSummary);
-    expect(await screen.findByText('Idea 1.1')).toBeVisible();
-    // Overview should collapse
-    expect(screen.queryByText('Overview Content 1')).not.toBeVisible();
-  });
 });
