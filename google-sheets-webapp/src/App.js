@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { fetchSheetData } from './services/sheetService';
-import SheetDataTable from './components/SheetDataTable';
+import AccordionView from './components/AccordionView';
+import { groupDataIntoSections, isRowEmpty } from './utils/dataProcessor'; // Import the functions
 import { CssBaseline, Container, Typography, AppBar, Toolbar, ThemeProvider, createTheme } from '@mui/material';
 
-// Basic Material UI 3 theme
 const theme = createTheme({
   palette: {
-    mode: 'light', // or 'dark'
+    mode: 'light',
     primary: {
-      main: '#6750A4', // Example Material 3 primary color
+      main: '#6750A4',
     },
     secondary: {
-      main: '#E8DEF8', // Example Material 3 secondary color
+      main: '#E8DEF8',
     },
     background: {
-      default: '#FFFBFE', // Example Material 3 background
+      default: '#FFFBFE',
     },
   },
   typography: {
@@ -22,22 +22,36 @@ const theme = createTheme({
   },
 });
 
+// isRowEmpty, isHeaderRow, groupDataIntoSections are now imported from ./utils/dataProcessor.js
+
 function App() {
-  const [sheetData, setSheetData] = useState([]);
+  const [processedData, setProcessedData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [originalHeaders, setOriginalHeaders] = useState([]);
 
   useEffect(() => {
     const getData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await fetchSheetData();
-        // Filter out any potential empty rows that papaparse might return if the CSV has trailing newlines
-        const filteredData = data.filter(row => Object.values(row).some(cell => cell !== null && cell !== '' && cell !== undefined));
-        setSheetData(filteredData);
+        const rawData = await fetchSheetData();
+
+        const actualHeaders = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+        setOriginalHeaders(actualHeaders);
+
+        // Filter out rows that are completely empty according to the utility function
+        const nonEmptyRows = rawData.filter(row => !isRowEmpty(row, actualHeaders));
+
+        if (nonEmptyRows.length === 0) {
+             setProcessedData([]);
+        } else {
+            const sections = groupDataIntoSections(nonEmptyRows); // Use imported function
+            setProcessedData(sections);
+        }
+
       } catch (e) {
-        console.error("Failed to fetch sheet data:", e);
+        console.error("Failed to fetch or process sheet data:", e);
         setError(e);
       } finally {
         setIsLoading(false);
@@ -55,8 +69,13 @@ function App() {
           <Typography variant="h6">Google Sheets Data Viewer</Typography>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ marginTop: 2, marginBottom: 2 }}>
-        <SheetDataTable data={sheetData} isLoading={isLoading} error={error} />
+      <Container maxWidth="xl" sx={{ marginTop: 2, marginBottom: 2 }}>
+        <AccordionView
+          sections={processedData}
+          isLoading={isLoading}
+          error={error}
+          originalHeaders={originalHeaders}
+        />
       </Container>
     </ThemeProvider>
   );
